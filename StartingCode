@@ -1,0 +1,58 @@
+# Import necessary libraries
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# Load the dataset
+df = pd.read_csv("C:/Users/Hudso/OneDrive/Desktop/games.csv")
+
+# Data Preprocessing
+df = df[df['winner'] != 'draw']  # Remove draws
+df['winner_binary'] = df['winner'].map({'white': 1, 'black': 0})  # Convert winner to binary
+
+# Feature Engineering
+df['rating_diff'] = df['white_rating'] - df['black_rating']
+df['num_moves'] = df['moves'].str.count(' ') + 1  # Counting moves
+
+# Encode top 10 most frequent openings
+top_openings = df['opening_name'].value_counts().nlargest(10).index
+df['opening_simplified'] = df['opening_name'].apply(lambda x: x if x in top_openings else 'Other')
+
+# One-hot encode the top 10 openings
+df = pd.get_dummies(df, columns=['opening_simplified'], drop_first=True)
+
+# One-hot encode victory status
+df = pd.get_dummies(df, columns=['victory_status'], drop_first=True)
+
+# Selecting final features
+features = ['rating_diff', 'num_moves'] + list(df.columns[df.columns.str.startswith('opening_simplified_')]) + \
+           list(df.columns[df.columns.str.startswith('victory_status_')])
+
+X = df[features]
+y = df['winner_binary']
+
+# Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+# Feature Scaling
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Train Logistic Regression Model with L1 Regularization
+model = LogisticRegression(max_iter=500, solver='liblinear', penalty='l1', C=0.1)  # L1 Regularization
+model.fit(X_train, y_train)
+
+# Make Predictions
+y_pred = model.predict(X_test)
+
+# Evaluate Model
+accuracy = accuracy_score(y_test, y_pred)
+print(f'Accuracy: {accuracy:.2f}')
+print('Classification Report:')
+print(classification_report(y_test, y_pred))
+print('Confusion Matrix:')
+print(confusion_matrix(y_test, y_pred))
