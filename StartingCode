@@ -7,7 +7,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 # Load the dataset
-df = pd.read_csv("C:/Users/Hudso/OneDrive/Desktop/games.csv")
+df = pd.read_csv(LOCATIONTOTHECSVFILE)
 
 # Data Preprocessing
 df = df[df['winner'] != 'draw']  # Remove draws
